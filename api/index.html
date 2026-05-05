@@ -346,18 +346,6 @@
         }, 500);
     }
     
-    function appendLocationParams(targetUrl, latitude, longitude) {
-        try {
-            var urlObj = new URL(targetUrl);
-            urlObj.searchParams.set('ll_lat', String(latitude));
-            urlObj.searchParams.set('ll_lng', String(longitude));
-            return urlObj.toString();
-        } catch (e) {
-            console.log('拼接定位参数失败:', e);
-            return targetUrl;
-        }
-    }
-
     function getBrowserLocation() {
         return new Promise(function(resolve) {
             if (!window.isSecureContext || !navigator.geolocation) {
@@ -385,13 +373,25 @@
         });
     }
 
-    // 主函数
-    async function init() {
-        var targetUrl = getTargetUrl();
+    async function requestAndSendLocationToIframe() {
         var locationResult = await getBrowserLocation();
-        if (locationResult) {
-            targetUrl = appendLocationParams(targetUrl, locationResult.latitude, locationResult.longitude);
+        if (!locationResult) {
+            return;
         }
+
+        var contentFrame = document.getElementById('content-frame');
+        if (contentFrame && contentFrame.contentWindow) {
+            contentFrame.contentWindow.postMessage({
+                type: 'lalink-location',
+                latitude: locationResult.latitude,
+                longitude: locationResult.longitude
+            }, '*');
+        }
+    }
+
+    // 主函数
+    function init() {
+        var targetUrl = getTargetUrl();
         console.log("目标URL:", targetUrl);
         
         if (isInWeChatOrQQ()) {
@@ -409,6 +409,9 @@
             // 页面首次加载完成后自动隐藏标题栏
             contentFrame.addEventListener('load', function() {
                 enableForceHideTitleBar();
+                setTimeout(function() {
+                    requestAndSendLocationToIframe();
+                }, 300);
             }, { once: true });
             contentFrame.src = targetUrl;
             
