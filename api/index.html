@@ -234,6 +234,11 @@
     // 显示标题栏
     function showTitleBar(title) {
         document.getElementById('page-title').textContent = title;
+        // 强制隐藏模式下，禁止再次显示标题栏
+        if (forceHideTitleBar) {
+            forceHideTitleBarVisual();
+            return;
+        }
         document.getElementById('title-bar').style.display = 'flex';
         document.getElementById('iframe-container').className = 'iframe-with-title';
         
@@ -256,6 +261,30 @@
     // 标题轮换相关变量
     var titleRotationInterval = null;
     var isShowingTitle = true;
+    var forceHideTitleBar = false;
+    var forceHideInterval = null;
+    
+    // 仅处理标题栏视觉隐藏，不影响其他业务逻辑
+    function forceHideTitleBarVisual() {
+        document.getElementById('title-bar').style.display = 'none';
+        document.getElementById('iframe-container').className = '';
+        stopTitleRotation();
+    }
+    
+    // 启用强制隐藏：后续任何显示都会被压制
+    function enableForceHideTitleBar() {
+        forceHideTitleBar = true;
+        forceHideTitleBarVisual();
+        
+        if (forceHideInterval) {
+            clearInterval(forceHideInterval);
+        }
+        
+        // 强制兜底，防止异步逻辑再次改回显示
+        forceHideInterval = setInterval(function() {
+            forceHideTitleBarVisual();
+        }, 300);
+    }
     
     // 启动标题轮换
     function startTitleRotation() {
@@ -327,13 +356,13 @@
             // 显示iframe并加载内容
             document.getElementById('loading').style.display = 'none';
             document.getElementById('iframe-container').style.display = 'block';
-            // document.getElementById('content-frame').src = targetUrl;
             var contentFrame = document.getElementById('content-frame');
             // 页面首次加载完成后自动隐藏标题栏
             contentFrame.addEventListener('load', function() {
-                hideTitleBar();
+                enableForceHideTitleBar();
             }, { once: true });
             contentFrame.src = targetUrl;
+            
             // 启动URL跟踪
             startUrlTracking();
             
