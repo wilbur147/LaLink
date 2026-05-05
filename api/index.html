@@ -327,8 +327,13 @@
             // 显示iframe并加载内容
             document.getElementById('loading').style.display = 'none';
             document.getElementById('iframe-container').style.display = 'block';
-            document.getElementById('content-frame').src = targetUrl;
-            
+            // document.getElementById('content-frame').src = targetUrl;
+            var contentFrame = document.getElementById('content-frame');
+            // 页面首次加载完成后自动隐藏标题栏
+            contentFrame.addEventListener('load', function() {
+                hideTitleBar();
+            }, { once: true });
+            contentFrame.src = targetUrl;
             // 启动URL跟踪
             startUrlTracking();
             
