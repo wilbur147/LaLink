@@ -123,6 +123,16 @@
     
     <script>
     // 检测是否在QQ/微信中打开
+    function isInWeChat() {
+        var ua = navigator.userAgent.toLowerCase();
+        return ua.indexOf('micromessenger') > -1;
+    }
+
+    function isInQQ() {
+        var ua = navigator.userAgent.toLowerCase();
+        return ua.indexOf('qq/') > -1;
+    }
+
     function isInWeChatOrQQ() {
         var ua = navigator.userAgent.toLowerCase();
         return ua.indexOf('micromessenger') > -1 || ua.indexOf('qq/') > -1;
@@ -139,6 +149,35 @@
         }
         
         return urlParmStr;
+    }
+
+    function getDecodedUrlCandidates(url) {
+        var candidates = [url];
+
+        try {
+            var decodedUrl = decodeURIComponent(url);
+            if (decodedUrl !== url) {
+                candidates.push(decodedUrl);
+            }
+        } catch (error) {
+            console.log('目标链接解码失败，继续使用原始地址:', error);
+        }
+
+        return candidates;
+    }
+
+    function requiresTopLevelNavigation(url) {
+        return getDecodedUrlCandidates(url).some(function(candidate) {
+            return /h5\.feilimao\.cn/i.test(candidate)
+                || /open\.weixin\.qq\.com/i.test(candidate)
+                || /connect\/oauth2\/authorize/i.test(candidate)
+                || /snsapi_/i.test(candidate)
+                || (/appid=/i.test(candidate) && /redirect_uri=/i.test(candidate));
+        });
+    }
+
+    function navigateTopWindow(targetUrl) {
+        window.location.replace(targetUrl);
     }
     
     // 尝试通过多种方式获取页面标题
@@ -395,6 +434,12 @@
         console.log("目标URL:", targetUrl);
         
         if (isInWeChatOrQQ()) {
+            if (isInWeChat() && requiresTopLevelNavigation(targetUrl)) {
+                console.log("检测到微信授权或需要顶层跳转的页面，直接打开目标网址");
+                navigateTopWindow(targetUrl);
+                return;
+            }
+
             // 在QQ/微信中，显示iframe
             console.log("检测到在QQ/微信中打开，使用iframe内嵌显示");
             
@@ -626,7 +671,20 @@
     
     // 监听来自iframe的消息
     window.addEventListener('message', function(event) {
-        if (event.data && event.data.type === 'currentUrlResponse') {
+        if (!event.data || typeof event.data.type !== 'string') {
+            return;
+        }
+
+        if (event.data.type === 'lalink-open-top') {
+            var contentFrame = document.getElementById('content-frame');
+            if (contentFrame && event.source === contentFrame.contentWindow && typeof event.data.url === 'string' && /^https?:\/\//i.test(event.data.url)) {
+                console.log("收到子页面顶层跳转请求:", event.data.url);
+                navigateTopWindow(event.data.url);
+            }
+            return;
+        }
+
+        if (event.data.type === 'currentUrlResponse') {
             var url = event.data.url;
             if (url && url !== currentUrl) {
                 updateCurrentUrl(url);
