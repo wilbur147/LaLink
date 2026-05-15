@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=0,viewport-fit=cover">
-    <title>加载中，请稍等...</title>
+    <title>小脚丫通讯</title>
     <style>
         body {
             margin: 0;
@@ -96,7 +96,7 @@
 <body>
     <div id="title-bar" class="title-bar" style="display: none;">
         <div class="content">
-            <span id="page-title" class="title-text">正在加载...</span>
+            <span id="page-title" class="title-text">小脚丫通讯</span>
             <span id="page-tip" class="tip-text" style="display: none;">如果画面长时间空白，请点击右上角选择在浏览器中打开！</span>
         </div>
         <button class="close-btn" onclick="hideTitleBar()">隐藏</button>
@@ -122,6 +122,8 @@
     </div>
     
     <script>
+    var SITE_TITLE = '小脚丫通讯';
+
     // 检测是否在QQ/微信中打开
     function isInWeChat() {
         var ua = navigator.userAgent.toLowerCase();
@@ -272,7 +274,7 @@
             
             return hostname;
         } catch(e) {
-            return '中转页面';
+            return SITE_TITLE;
         }
     }
     
@@ -443,9 +445,8 @@
             // 在QQ/微信中，显示iframe
             console.log("检测到在QQ/微信中打开，使用iframe内嵌显示");
             
-            // 先显示默认标题
-            document.title = '中转页面';
-            showTitleBar('正在加载...');
+            document.title = SITE_TITLE;
+            showTitleBar(SITE_TITLE);
             
             // 显示iframe并加载内容
             document.getElementById('loading').style.display = 'none';
@@ -469,8 +470,6 @@
             // 尝试获取页面标题
             getPageTitle(targetUrl, function(title) {
                 console.log("获取到页面标题:", title);
-                document.title = title;
-                showTitleBar(title);
             });
             
         } else {
@@ -662,8 +661,7 @@
             // 尝试更新页面标题
             getPageTitle(currentUrl, function(title) {
                 if (title && title !== '未知页面') {
-                    document.title = title;
-                    showTitleBar(title);
+                    console.log("内嵌页面标题:", title);
                 }
             });
         }
